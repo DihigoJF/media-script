@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reproductor de Video HLS</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap");
+      * {
+        font-family: "Play", sans-serif;
+        user-select: none;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #111319;
+      }
+      #wooli-hls-video-player {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        outline: none;
+        object-fit: contain;
+        transition: 0.2s;
+      }
+      button {
+        outline: none;
+        border: none;
+        background: none;
+        color: #fff;
+        font-size: 16px;
+        text-transform: uppercase;
+        font-style: italic;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 5px;
+      }
+      button i {
+        font-size: 22px;
+        user-select: none;
+      }
+      #volume-wltv-d i {
+        font-size: 22px;
+      }
+      #current-time {
+        opacity: 0.9;
+      }
+      #total-time {
+        opacity: 0.6;
+      }
+      .controls-player-progress {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+      #wooli-hls-player {
+        position: relative;
+        width: 100%;
+        background: #111319;
+        /* border-radius: 7px 0 0 0; */
+        overflow: hidden;
+        user-select: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: white;
+        border-radius: 10px;
+      }
+      .wooli-hls-controls {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        background: linear-gradient(to top, #000000, transparent);
+        z-index: 3;
+        transform: translateY(0%);
+        transition: 0.3s;
+        opacity: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+      }
+      .controls-play-wooli {
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 50px;
+        transition: 0.3s;
+        opacity: 1;
+      }
+      .controls-hidden {
+        transform: translateY(180%);
+        opacity: 0;
+      }
+      .controlsPlay-hidden {
+        opacity: 0;
+      }
+      #quality-selector,
+      #subtitle-selector,
+      .wooli-speed-player,
+      #wooli-speed-player,
+      #audio-selector {
+        position: absolute;
+        bottom: 20px;
+        width: 140px;
+        padding: 10px 0;
+        border-radius: 5px;
+        background: #2a2a3ccc;
+        backdrop-filter: blur(20px);
+        opacity: 0;
+        transform: translateY(-20px);
+        pointer-events: none;
+        transition: 0.2s;
+        z-index: 10;
+      }
+      #quality-selector.active,
+      #subtitle-selector.active,
+      .wooli-speed-player.active,
+      #wooli-speed-player.active,
+      #audio-selector.active {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        bottom: 35px;
+      }
+      #quality-selector button,
+      .wooli-speed-ply button,
+      #subtitle-selector button,
+      #audio-selector button {
+        border: none;
+        outline: none;
+        background: none;
+        color: white;
+        padding: 10px;
+        cursor: pointer;
+        width: 100%;
+        display: flex;
+        gap: 5px;
+        font-size: 15px;
+        font-weight: 600;
+        font-style: italic;
+        justify-content: flex-start;
+        transition: 0.25s;
+      }
+      #quality-selector button:hover,
+      .wooli-speed-ply button:hover,
+      #subtitle-selector button:hover,
+      #audio-selector button:hover {
+        color: #f53851;
+      }
+      #quality-selector button.selected,
+      #subtitle-selector button.selected,
+      #wooli-speed-player button.selected,
+      #audio-selector button.selected {
+        background: linear-gradient(45deg, #f5385150, transparent);
+        color: #f53851;
+        font-weight: 800;
+      }
+      #quality-selector {
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .progress-bar-container {
+        width: 98%;
+        background: #e9e9ffa4;
+        border-radius: 4px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        height: 5px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .progress-bar {
+        width: 0%;
+        border-radius: 4px;
+        height: 5px;
+        background: linear-gradient(to left, #f53851, #d93c7f);
+        position: relative;
+        z-index: 1;
+      }
+      .progress-bar::before {
+        content: "";
+        position: absolute;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        right: -11px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #f5385180;
+        transition: 0.2s;
+        opacity: 0;
+        padding: 3px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .progress-bar::after {
+        content: "";
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #ffffff;
+        transition: 0.2s;
+        opacity: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .progress-bar-container:hover .progress-bar::before,
+      .progress-bar-container:hover .progress-bar::after {
+        opacity: 1;
+      }
+      .controls-play-wooli button {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        outline: none;
+        background: #2a2a3ccc;
+        backdrop-filter: blur(20px);
+        color: #fff;
+        cursor: pointer;
+        font-size: 25px;
+      }
+      button.wltv-playpause {
+        width: 76px;
+        height: 76px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .wooli-control-list {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        padding: 10px 0;
+      }
+      .speed-wltv {
+        font-size: 11px;
+        color: #787984;
+        font-style: italic;
+      }
+      .buffer-bar {
+        width: 0%;
+        height: 100%;
+        background-color: #ffffffdb;
+        position: absolute;
+        top: 0;
+        border-radius: 4px;
+        transition: width 0.3s ease-in-out;
+      }
+      .wooli-right-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding-right: 15px;
+      }
+      .wooli-left-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding-left: 15px;
+      }
+      .volumen-wltv,
+      .wooli-speed-ply {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        cursor: pointer;
+      }
+      .wooli-right-controls button {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #wooli-speed-player button {
+        justify-content: flex-start;
+      }
+      #volume-wltv-d:hover #volume-control {
+        display: inline-block;
+        width: 85px;
+        border-radius: 50px;
+      }
+      #volume-percentage {
+        transform: rotate(90deg);
+        text-align: center;
+        font-size: 12px;
+        height: 20px;
+        width: 20px;
+      }
+      #volume-control {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100px;
+        height: 6px;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #ffffff;
+        cursor: var(--pointer);
+        outline: none;
+        border: none;
+        transition: 0.2s;
+      }
+      #volume-control::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: none;
+        outline: none;
+        border: 4px solid #ff596f;
+        background: #ffffff;
+        color: #fff;
+      }
+      .volumen-wltv:hover .content-wltv-vol {
+        height: 45px;
+        width: 150px;
+        transform: rotate(-90deg) scaleX(1);
+        bottom: 100px;
+      }
+      .content-wltv-vol::after {
+        content: "";
+        position: absolute;
+        background: none;
+        width: 14px;
+        height: 45px;
+        left: -12px;
+        cursor: pointer;
+      }
+      .content-wltv-vol {
+        padding: 0;
+        position: absolute;
+        transform: rotate(-90deg) scaleX(0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: row-reverse;
+        gap: 5px;
+        cursor: pointer;
+        background: #2a2a3ccc;
+        backdrop-filter: blur(20px);
+        bottom: 50px;
+        border-radius: 7px;
+        transition: 0.2s;
+        width: 0;
+        height: 0;
+        z-index: 1;
+      }
+      .wltv-time-player {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 3px;
+        font-size: 16px;
+        color: #ffffffdb;
+      }
+      .wltv-speed-s7f {
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-style: italic;
+      }
+      .watermark-wooli-player {
+        position: absolute;
+        top: 40px;
+        right: 40px;
+        opacity: 0.6;
+        z-index: 1;
+        width: 12%;
+      }
+      .watermark-wooli-player #watermark {
+        width: 100%;
+        height: auto;
+      }
+      .progress-time {
+        position: absolute;
+        top: -35px;
+        margin-right: 15px;
+        left: 0;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 5px;
+        border-radius: 5px;
+      }
+
+      @media (max-width: 670px){
+        #pipButton,
+        #captureFrameButton,
+        #playPauseButton {
+          display: none;
+        }
+        #quality-selector button, .wooli-speed-ply button, #subtitle-selector button, #audio-selector button,
+        .wltv-speed-s7f,
+        .wltv-time-player,
+        button{
+          font-size: 14px;
+        }
+        .wooli-control-list {
+          padding: 0 0 10px 0;
+        }
+        button.wltv-playpause {
+          width: 65px !important;
+          height: 65px !important;
+        }
+        .controls-play-wooli button {
+          width: 45px;
+          height: 45px;
+        }
+        .wooli-right-controls {
+          gap: 10px;
+        }
+      }
+      @media (max-width: 455px){
+        .wooli-audio-ply,
+        .wooli-subtitle-ply{
+          display: none !important;
+        }
+      }
+      @media (max-width: 360px){
+        .wooli-quality-ply{
+          display: none !important;
+        }
+      }
+    </style>
+    <style>
+      .content-media-player {
+        margin: 0 200px;
+      }
+      .content-video-hls {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        height: 37px;
+      }
+      #stream-url-wltv {
+        width: 100%;
+        padding: 10px;
+        outline: none;
+        border: 1px solid #313541;
+        background: #1e212a;
+        border-radius: 7px 0 0 7px;
+        color: #ffffff;
+      }
+      #enter-hls-link {
+        background: #ff3b86;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: normal;
+        border-radius: 0 7px 7px 0;
+        padding: 10px;
+      }
+      .streaming-url {
+        padding: 10px 0;
+        display: flex;
+        color: white;
+      }
+      .info-bsc-nfe {
+        color: #fff;
+        font-family: system-ui;
+        font-size: 14px;
+        display: flex;
+        padding: 10px 0;
+      }
+      .content-info-hls-player {
+        padding: 15px;
+        background: #262a36;
+        border-radius: 10px;
+      }
+      .content-primary-text {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      .op-text {
+        font-size: 50px;
+        color: #dddee9;
+        text-align: center;
+        font-family: system-ui;
+      }
+      .content-primary-text p {
+        margin-top: 0;
+        margin-bottom: 30px;
+        color: #fff;
+        font-family: system-ui;
+        font-size: 18px;
+        text-align: center;
+      }
+      #url-link-f,
+      #url-link-t,
+      #url-link-s {
+        color: #ff596f;
+        user-select: text;
+        cursor: pointer;
+        position: relative;
+        line-height: 15px;
+        height: 5px;
+        display: -webkit-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+      }
+      #url-link-f:hover,
+      #url-link-t:hover,
+      #url-link-s:hover {
+        color: #ff7285;
+      }
+      #url-link-f::before {
+        content: "(Only Quality)";
+        position: absolute;
+        color: #959aaa;
+        font-size: 12px;
+        right: -85px;
+        font-weight: 600;
+      }
+      #url-link-s::before {
+        content: "(Multi Options)";
+        position: absolute;
+        color: #959aaa;
+        font-size: 12px;
+        right: -95px;
+        font-weight: 600;
+      }
+      #url-link-t::before {
+        content: "(Normal)";
+        position: absolute;
+        color: #959aaa;
+        font-size: 12px;
+        right: -55px;
+        font-weight: 600;
+      }
+      
+      @media (max-width: 991px){
+        .content-media-player {
+          margin: 0 20px;
+        }
+      }
+      @media (max-width: 785px){
+        .content-media-player {
+          margin: 0 10px;
+        }
+        .content-primary-text {
+          margin: 10px;
+        }
+      }
+      @media (max-width: 630px){
+        #url-link-f::before {
+          content: "";
+        }
+        #url-link-s::before {
+          content: "";
+        }
+        #url-link-t::before {
+          content: "";
+        }
+        .op-text {
+          font-size: 35px;
+          line-height: 50px;
+        }
+        .content-primary-text p {
+          font-size: 15px;
+        }
+      }
+      @media (max-width: 575px){
+        .content-media-player {
+          margin: 0 0px;
+        }
+        .content-info-hls-player {
+          margin: 5px;
+        }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <link rel="stylesheet" href="./WooliIcons/style.css" />
+  </head>
+  <body>
+    <div class="content-media-player">
+      <div class="content-primary-text">
+        <h1 class="op-text">
+          Pruebe sus transmisiones con el reproductor WooliTV HLS/M3U8
+        </h1>
+        <p>
+          Comience a transmitir ahora usando WooliTV Livestreaming HTML5 Player
+        </p>
+      </div>
+      <div id="wooli-hls-player">
+        <video
+          id="wooli-hls-video-player"
+          type="application/x-mpegURL"
+          src="https://woolitv.s3.amazonaws.com/kda/master.m3u8"
+          poster="https://ia800208.us.archive.org/24/items/ltk-1mu-9/Ltk1mu9.png"
+        ></video>
+        <div class="controls-play-wooli">
+          <button class="wltv-backward-player">
+            <i class="wltv-reward-i"></i>
+          </button>
+          <button class="wltv-playpause"><i class="wltv-play-i"></i></button>
+          <button class="wltv-forward-player">
+            <i class="wltv-forward-i"></i>
+          </button>
+        </div>
+        <div class="wooli-hls-controls">
+          <div class="controls-player-progress">
+            <div class="progress-time" id="progress-time"></div>
+            <div class="progress-bar-container" id="progress-bar-container">
+              <div class="progress-bar"></div>
+              <div class="buffer-bar"></div>
+            </div>
+          </div>
+          <div class="wooli-control-list">
+            <div class="wooli-left-controls">
+              <button id="playPauseButton"><i class="wltv-play-i"></i></button>
+              <button id="captureFrameButton">
+                <i class="wltv-photo-i"></i>
+              </button>
+              <div class="volumen-wltv">
+                <span id="volume-wltv-d"><i class="wltv-volume-2"></i></span>
+                <div class="content-wltv-vol">
+                  <span id="volume-percentage">100</span>
+                  <input
+                    type="range"
+                    id="volume-control"
+                    min="0"
+                    max="100"
+                    value="100"
+                    step="1"
+                  />
+                </div>
+              </div>
+              <div class="wltv-time-player">
+                <span id="current-time">00:00</span> /
+                <span id="total-time">00:00</span>
+                <div id="live-status"></div>
+              </div>
+            </div>
+            <div class="wooli-right-controls">
+              <button class="wooli-quality-ply">
+                <span class="wltv-qualityWd">Auto</span>
+                <div id="quality-selector"></div>
+              </button>
+              <span class="wooli-speed-ply">
+                <span class="wltv-speed-s7f">1.0X</span>
+                <div id="wooli-speed-player">
+                  <button id="playback-rate-2.0">2.0x</button>
+                  <button id="playback-rate-1.5">1.50x</button>
+                  <button id="playback-rate-1.25">1.25x</button>
+                  <button id="playback-rate-1.1">1.10x</button>
+                  <button id="playback-rate-1.0" class="selected">1.0x</button>
+                  <button id="playback-rate-0.75">0.75x</button>
+                  <button id="playback-rate-0.5">0.25x</button>
+                </div>
+              </span>
+              <button class="wooli-subtitle-ply">
+                <i class="wltv-subtitle-i"></i>
+                <div id="subtitle-selector"></div>
+              </button>
+              <button class="wooli-audio-ply">
+                <i class="wltv-headphone1"></i>
+                <div id="audio-selector"></div>
+              </button>
+              <button id="pipButton"><i class="wltv-pip-out-i"></i></button>
+              <button class="wltv-screen-ex">
+                <i id="screen-web" class="wltv-fullscreen-i"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <br />
+      <div class="content-info-hls-player">
+        <span class="streaming-url">Url de transmision</span>
+        <div class="content-video-hls">
+          <input
+            type="text"
+            id="stream-url-wltv"
+            placeholder="https://woolitv.s3.amazonaws.com/kda/master.m3u8"
+            required=""
+          />
+          <button id="enter-hls-link">Play</button>
+        </div>
+        <span class="info-bsc-nfe"
+          >Su URL de transmisión debe ser compatible con HTTPS; de lo contrario,
+          es posible que su transmisión no se reproduzca. Asegúrese de que CORS
+          esté habilitado en el servidor de transmisión cuando utilice
+          transmisiones HLS</span
+        >
+        <span class="streaming-url">Enlaces de prueba</span>
+        <span class="streaming-url" id="url-link-f"
+          >https://woolitv.s3.amazonaws.com/kda/master.m3u8</span
+        >
+        <br />
+        <span class="streaming-url" id="url-link-s"
+          >https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8</span
+        >
+        <br />
+        <span class="streaming-url" id="url-link-t"
+          >https://woolitv.s3.amazonaws.com/hls/radiohead-creep.m3u8</span
+        >
+      </div>
+      <br />
+      <br />
+      <br />
+      <br />
+    </div>
+
+    <script>
+      const videoPlayer = document.getElementById("wooli-hls-video-player");
+      const playerDiv = document.getElementById("wooli-hls-player");
+      const qualitySelector = document.getElementById("quality-selector");
+      const subtitleSelector = document.getElementById("subtitle-selector");
+      const audioSelector = document.getElementById("audio-selector");
+      const speedVSelector = document.getElementById("wooli-speed-player");
+
+      const qualityButton = document.querySelector(".wooli-quality-ply");
+      const subtitleButton = document.querySelector(".wooli-subtitle-ply");
+      const audioButton = document.querySelector(".wooli-audio-ply");
+      const speedVButton = document.querySelector(".wooli-speed-ply");
+      const speedDisplay = document.querySelector(".wltv-speed-s7f");
+      const speedPlayer = document.getElementById("wooli-speed-player");
+
+      const currentTimeDisplay = document.getElementById("current-time");
+      const totalTimeDisplay = document.getElementById("total-time");
+
+      const progressBarContainer = document.getElementById(
+        "progress-bar-container"
+      );
+      const progressBar = document.querySelector(".progress-bar");
+      const bufferBar = document.querySelector(".buffer-bar");
+
+      const volumeControl = document.getElementById("volume-control");
+      const volumePercentage = document.getElementById("volume-percentage");
+      const volumeIcon = document.getElementById("volume-wltv-d");
+      const volumeIconF = document.querySelector("#volume-wltv-d i");
+
+      const forwardButton = document.querySelector(".wltv-forward-player");
+      const playPauseButton = document.querySelector(".wltv-playpause");
+      const playPauseButtonC = document.getElementById("playPauseButton");
+      const backwardButton = document.querySelector(".wltv-backward-player");
+
+      const captureFrameButton = document.getElementById("captureFrameButton");
+
+      const watermarkDiv = document.createElement("div");
+
+      // Agregar la clase watermark-wooli-player al div
+      watermarkDiv.classList.add("watermark-wooli-player");
+      watermarkDiv.innerHTML =
+        '<svg id="watermark" version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 47" width="220" height="47"><style>.a {fill: #f5f5f5}</style><path fill-rule="evenodd" class="a" d="m154.9 2.9c0.7 0.7 1.3 1.6 0.8 2.6q-0.3 0.7-1 1.4-1.9 2-4.6 2.9c-1.2 0.4-2.7 0.6-3.5-0.5-0.8-1-1.1-2.6-1.1-3.9-0.1-1.5 0.1-3.4 1.1-4.7 0.9-1 2.4-0.8 3.5-0.4 1.8 0.5 3.5 1.3 4.8 2.6zm-104.6 26.5c0-9.6 7.3-16.5 17.4-16.5 10.1 0 17.4 6.9 17.4 16.5 0 9.5-7.3 16.6-17.4 16.6-10.1 0-17.4-7.1-17.4-16.6zm24.1 0c0-3.9-3-7-6.7-7-3.7 0-6.7 3.1-6.7 7 0 3.8 3 6.9 6.7 6.9 3.7 0 6.7-3.1 6.7-6.9zm13.8 0c0-9.6 7.3-16.5 17.4-16.5 10.1 0 17.4 6.9 17.4 16.5 0 9.5-7.3 16.6-17.4 16.6-10.1 0-17.4-7.1-17.4-16.6zm24.1 0c0-3.9-3-7-6.7-7-3.7 0-6.7 3.1-6.7 7 0 3.8 3 6.9 6.7 6.9 3.7 0 6.7-3.1 6.7-6.9zm15.6-26.7h10.8v42.2h-10.8zm55.7 32.8v9.4h-7.3c-6.9 0-11-4.1-11-11.1v-11.6h-5.7v-2.6l13.8-14.7h2.3v9h7.8v8.3h-7.5v9.8c0 2.2 1.3 3.5 3.6 3.5zm36.4-21.6l-12.5 31h-9.6l-12.7-31h11.7l5.9 18.3 5.7-18.3zm-201.3 31h-8.5c0 0-9.8-29.8-10.2-31q0 0 0-0.1h11.2c0 0.1 4.7 16.3 4.7 16.3 0 0 7.3-16.1 7.3-16.2q0.6-1.3 2-0.9c0.4 0.1 0.6 0.4 0.8 0.7 0.1 0.1 7.7 16.4 7.8 16.6 0.1 0 4.7-16.5 4.7-16.5h10.8q0.1 0 0.1 0.1l-10 31h-8.5c0 0-6.1-13.9-6.1-13.8-0.2 0.1-6.1 13.8-6.1 13.8zm126.7-30.5c0-0.3 0.3-0.6 0.6-0.6h9.5c0.3 0 0.6 0.3 0.6 0.6v29.9c0 0.3-0.3 0.6-0.6 0.6h-9.5c-0.3 0-0.6-0.3-0.6-0.6z"></path></svg>';
+      playerDiv.appendChild(watermarkDiv);
+
+      // Función para capturar el fotograma actual y descargarlo como imagen
+      function captureFrame() {
+        // Crear un lienzo (canvas) del tamaño del video
+        const canvas = document.createElement("canvas");
+        canvas.width = videoPlayer.videoWidth;
+        canvas.height = videoPlayer.videoHeight;
+
+        // Dibujar el fotograma actual en el lienzo
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+
+        // Convertir el lienzo a una imagen y descargarla
+        const downloadLink = document.createElement("a");
+        downloadLink.href = canvas.toDataURL("image/png");
+        downloadLink.download = "wooli-hls-frame.png";
+        downloadLink.click();
+      }
+
+      // Agregar evento click al botón de captura de fotogramas
+      captureFrameButton.addEventListener("click", captureFrame);
+      const pipButton = document.getElementById("pipButton");
+
+      // Agregar evento de clic al botón PIP
+      pipButton.addEventListener("click", () => {
+        if (document.pictureInPictureElement) {
+          // Si ya está en modo PIP, salir del modo PIP
+          document.exitPictureInPicture().catch((error) => {
+            console.error("Error al salir del modo Picture-in-Picture:", error);
+          });
+        } else {
+          // Si no está en modo PIP, solicitar entrar al modo PIP
+          videoPlayer.requestPictureInPicture().catch((error) => {
+            console.error("Error al entrar al modo Picture-in-Picture:", error);
+          });
+        }
+      });
+
+      // Evento para actualizar el estado del botón cuando se entra o sale del modo PIP
+      videoPlayer.addEventListener("enterpictureinpicture", () => {
+        pipButton.innerHTML = '<i class="wltv-pip-i"></i>';
+      });
+
+      videoPlayer.addEventListener("leavepictureinpicture", () => {
+        pipButton.innerHTML = '<i class="wltv-pip-out-i"></i>';
+      });
+
+      const controlsPlayWooli = document.querySelector(".controls-play-wooli");
+      const wooliHlsControls = document.querySelector(".wooli-hls-controls");
+
+      // Función para ocultar los controles y el cursor
+      function hideControlsAndCursor() {
+        wooliHlsControls.classList.add("controls-hidden");
+        controlsPlayWooli.classList.add("controlsPlay-hidden");
+        playerDiv.style.cursor = "none";
+      }
+
+      // Función para mostrar los controles y el cursor
+      function showControlsAndCursor() {
+        wooliHlsControls.classList.remove("controls-hidden");
+        controlsPlayWooli.classList.remove("controlsPlay-hidden");
+        playerDiv.style.cursor = "auto";
+      }
+
+      // Establecer temporizador para ocultar los controles después de 3 segundos
+      let timer;
+
+      playerDiv.addEventListener("mousemove", function () {
+        clearTimeout(timer);
+        showControlsAndCursor();
+        timer = setTimeout(hideControlsAndCursor, 3000);
+      });
+
+      // Evento para ocultar los controles y el cursor al cargar la página
+      hideControlsAndCursor();
+
+      var selectedButton = null;
+
+      //
+      videoPlayer.controls = false;
+
+      // Deshabilitar menú contextual del clic derecho
+      videoPlayer.addEventListener("contextmenu", function (event) {
+        event.preventDefault(); // Previene que aparezca el menú contextual
+      });
+      // Función para avanzar 10 segundos
+      forwardButton.addEventListener("click", function () {
+        videoPlayer.currentTime += 10;
+      });
+
+      // Función para pausar o reproducir el video
+      function togglePlayPause() {
+        if (videoPlayer.paused) {
+          videoPlayer.play();
+          playPauseButton.innerHTML = '<i class="wltv-pause-i"></i>';
+          playPauseButtonC.innerHTML = '<i class="wltv-pause-i"></i>';
+        } else {
+          videoPlayer.pause();
+          playPauseButton.innerHTML = '<i class="wltv-play-i"></i>';
+          playPauseButtonC.innerHTML = '<i class="wltv-play-i"></i>';
+        }
+      }
+
+      // Agregar evento click a ambos botones de play/pause
+      playPauseButton.addEventListener("click", togglePlayPause);
+      playPauseButtonC.addEventListener("click", togglePlayPause);
+
+      // Función para retroceder 10 segundos
+      backwardButton.addEventListener("click", function () {
+        videoPlayer.currentTime -= 10;
+      });
+
+      // Set initial volume
+      videoPlayer.volume = volumeControl.value / 100;
+
+      // Update volume icon
+      function updateVolumeIcon() {
+        const volume = parseInt(volumeControl.value, 10);
+        if (volume === 0) {
+          volumeIconF.className = "wltv-volume-x";
+        } else if (volume > 50) {
+          volumeIconF.className = "wltv-volume-2";
+        } else {
+          volumeIconF.className = "wltv-volume-i";
+        }
+      }
+
+      // Update volume when slider changes
+      volumeControl.addEventListener("input", function () {
+        const volume = parseFloat(volumeControl.value) / 100;
+        videoPlayer.volume = volume;
+        volumePercentage.textContent = volumeControl.value;
+        updateVolumeIcon();
+        updateVolumeRangeColor(volumeControl.value);
+      });
+
+      // Toggle mute/unmute on volume icon click
+      volumeIcon.addEventListener("click", function () {
+        if (videoPlayer.volume === 0) {
+          // Establecer el volumen al valor anterior o al valor predeterminado si es cero
+          videoPlayer.volume =
+            volumeControl.value > 0 ? volumeControl.value / 100 : 0.5;
+          volumeControl.value = videoPlayer.volume * 100;
+        } else {
+          // Mute
+          videoPlayer.volume = 0;
+          volumeControl.value = 0;
+        }
+        volumePercentage.textContent = volumeControl.value;
+        updateVolumeIcon();
+        updateVolumeRangeColor(volumeControl.value);
+      });
+
+      // Función para actualizar el color de la barra de volumen
+      function updateVolumeRangeColor(value) {
+        volumeControl.style.background = `linear-gradient(to right, #f6256b 0%, #f53851 ${value}%, #ffffff70 ${value}%, #ffffff70 100%)`;
+      }
+
+      // Llamamos a la función para actualizar el color de la barra de volumen inicialmente
+      updateVolumeRangeColor(volumeControl.value);
+
+      const progressTime = document.getElementById("progress-time");
+
+      // Actualizar el tiempo mientras el mouse se mueve sobre la barra de progreso
+      progressBarContainer.addEventListener("mousemove", function (event) {
+        const rect = progressBarContainer.getBoundingClientRect();
+        let x = event.clientX - rect.left;
+        const width = progressBarContainer.clientWidth * 0.97; // Reducir el ancho para evitar desbordamiento
+
+        // Limitar la posición x al área de la barra de progreso
+        x = Math.max(0, Math.min(x, width));
+
+        const duration = videoPlayer.duration;
+        const currentTime = (x / width) * duration;
+        progressTime.style.left = `${x}px`;
+        progressTime.textContent = formatTime(currentTime);
+      });
+
+      // Mostrar el tiempo al pasar el mouse sobre la barra de progreso
+      progressBarContainer.addEventListener("mouseenter", function (event) {
+        progressTime.style.opacity = "1";
+      });
+
+      // Ocultar el tiempo al sacar el mouse de la barra de progreso
+      progressBarContainer.addEventListener("mouseleave", function (event) {
+        progressTime.style.opacity = "0";
+      });
+
+      // Actualizar la barra de progreso y la barra de búfer
+      function updateProgressBar(event) {
+        var rect = progressBarContainer.getBoundingClientRect();
+        var x = event.clientX - rect.left;
+        var width = rect.width;
+        var percentage = (x / width) * 100;
+        progressBar.style.width = percentage + "%";
+        var currentTime = (percentage / 100) * videoPlayer.duration;
+        videoPlayer.currentTime = currentTime;
+      }
+
+      progressBarContainer.addEventListener("mousedown", function (event) {
+        updateProgressBar(event);
+        window.addEventListener("mousemove", updateProgressBar);
+      });
+
+      window.addEventListener("mouseup", function () {
+        window.removeEventListener("mousemove", updateProgressBar);
+      });
+
+      progressBarContainer.addEventListener("touchstart", function (event) {
+        updateProgressBar(event.touches[0]);
+        window.addEventListener("touchmove", function (event) {
+          updateProgressBar(event.touches[0]);
+        });
+      });
+
+      window.addEventListener("touchend", function () {
+        window.removeEventListener("touchmove", updateProgressBar);
+      });
+
+      //
+      videoPlayer.addEventListener("loadedmetadata", function () {
+        totalTimeDisplay.textContent = formatTime(videoPlayer.duration);
+      });
+
+      videoPlayer.addEventListener("timeupdate", function () {
+        currentTimeDisplay.textContent = formatTime(videoPlayer.currentTime);
+
+        // Actualizar la barra de progreso
+        const percentage =
+          (videoPlayer.currentTime / videoPlayer.duration) * 100;
+        progressBar.style.width = percentage + "%";
+      });
+
+      function formatTime(time) {
+        const hours = Math.floor(time / 3600);
+        const minutes = Math.floor((time % 3600) / 60);
+        const seconds = Math.floor(time % 60);
+
+        let formattedTime = "";
+
+        if (hours > 0) {
+          formattedTime += `${String(hours).padStart(2, "0")}:`;
+        }
+
+        formattedTime += `${String(minutes).padStart(2, "0")}:${String(
+          seconds
+        ).padStart(2, "0")}`;
+
+        return formattedTime;
+      }
+
+      //
+
+      speedPlayer.addEventListener("click", function (event) {
+        if (event.target.tagName === "BUTTON") {
+          const buttons = speedPlayer.querySelectorAll("button");
+          buttons.forEach((button) => button.classList.remove("selected"));
+
+          const selectedButton = event.target;
+          selectedButton.classList.add("selected");
+
+          const playbackRate = parseFloat(selectedButton.textContent);
+          videoPlayer.playbackRate = playbackRate;
+
+          // Formatear la velocidad seleccionada con dos decimales si es necesario
+          const formattedPlaybackRate =
+            playbackRate % 1 === 0
+              ? playbackRate.toFixed(1)
+              : playbackRate.toFixed(2);
+          speedDisplay.textContent = `${formattedPlaybackRate}X`;
+        }
+      });
+
+      // Actualizar la barra de búfer
+      videoPlayer.addEventListener("progress", function () {
+        if (videoPlayer.duration > 0) {
+          for (var i = 0; i < videoPlayer.buffered.length; i++) {
+            if (
+              videoPlayer.buffered.start(videoPlayer.buffered.length - 1 - i) <
+              videoPlayer.currentTime
+            ) {
+              var bufferEnd = videoPlayer.buffered.end(
+                videoPlayer.buffered.length - 1 - i
+              );
+              var bufferPercent = (bufferEnd / videoPlayer.duration) * 100;
+              bufferBar.style.width = bufferPercent + "%";
+              break;
+            }
+          }
+        }
+      });
+      //
+      const fullscreenButton = document.querySelector(".wltv-screen-ex");
+      const fullscreenIcon = fullscreenButton.querySelector("#screen-web");
+
+      // Función para cambiar el ícono del botón
+      // Función para cambiar el ícono del botón
+      function toggleFullscreenIcon(isFullscreen) {
+        if (isFullscreen) {
+          fullscreenIcon.classList.remove("wltv-fullscreen-i");
+          fullscreenIcon.classList.add("wltv-outscreen-i");
+        } else {
+          fullscreenIcon.classList.remove("wltv-outscreen-i");
+          fullscreenIcon.classList.add("wltv-fullscreen-i");
+        }
+      }
+
+      // Manejar el evento click del botón de pantalla completa
+      fullscreenButton.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          if (playerDiv.requestFullscreen) {
+            playerDiv.requestFullscreen();
+          } else if (playerDiv.webkitRequestFullscreen) {
+            // Safari
+            playerDiv.webkitRequestFullscreen();
+          } else if (playerDiv.msRequestFullscreen) {
+            // IE11
+            playerDiv.msRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            // Safari
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            // IE11
+            document.msExitFullscreen();
+          }
+        }
+      });
+
+      // Manejar el cambio de estado de pantalla completa
+      document.addEventListener("fullscreenchange", () => {
+        const isFullscreen = !!document.fullscreenElement;
+        toggleFullscreenIcon(isFullscreen);
+      });
+
+      document.addEventListener("webkitfullscreenchange", () => {
+        // Safari
+        const isFullscreen = !!document.webkitFullscreenElement;
+        toggleFullscreenIcon(isFullscreen);
+      });
+
+      document.addEventListener("msfullscreenchange", () => {
+        // IE11
+        const isFullscreen = !!document.msFullscreenElement;
+        toggleFullscreenIcon(isFullscreen);
+      });
+      //
+
+      const elements = {
+        quality: { btn: qualityButton, content: qualitySelector },
+        subtitle: { btn: subtitleButton, content: subtitleSelector },
+        audio: { btn: audioButton, content: audioSelector },
+        speed: { btn: speedVButton, content: speedVSelector },
+      };
+
+      for (const [name, { btn, content }] of Object.entries(elements)) {
+        btn.addEventListener("click", () => {
+          toggleElement(content);
+          toggleElement(btn);
+          closeOtherElements(name);
+        });
+      }
+
+      function toggleElement(element) {
+        element.classList.toggle("active");
+      }
+
+      function closeOtherElements(except) {
+        for (const [name, { btn, content }] of Object.entries(elements)) {
+          if (name !== except && content.classList.contains("active")) {
+            content.classList.remove("active");
+            btn.classList.remove("active");
+          }
+        }
+      }
+
+      // Agregar evento de clic en cualquier parte del documento
+      document.addEventListener("click", (event) => {
+        const target = event.target;
+        // Si el clic no es en ninguno de los botones ni en los selectores, eliminamos la clase "active" de todos los elementos
+        if (
+          !target.closest(".wooli-quality-ply") &&
+          !target.closest(".wooli-subtitle-ply") &&
+          !target.closest(".wooli-audio-ply") &&
+          !target.closest(".wooli-speed-ply") &&
+          !target.closest(".quality-selector") &&
+          !target.closest(".subtitle-selector") &&
+          !target.closest(".audio-selector") &&
+          !target.closest(".speed-selector")
+        ) {
+          for (const [, { btn, content }] of Object.entries(elements)) {
+            content.classList.remove("active");
+            btn.classList.remove("active");
+          }
+        }
+      });
+      document.addEventListener("DOMContentLoaded", function () {
+        function WooliPlayerHlsMediaHTML() {
+          if (Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource(videoPlayer.src);
+            hls.attachMedia(videoPlayer);
+
+            //
+            // Verificar si el video HLS está en vivo
+            function isLiveHLSVideo() {
+              return (
+                hls &&
+                hls.config &&
+                hls.config.liveSyncDurationCount !== undefined
+              );
+            }
+
+            hls.on(Hls.Events.LIVE_BACK_BUFFER_REACHED, function () {
+              console.log("El video está en vivo");
+            });
+
+            hls.on(Hls.Events.LIVE_BACK_BUFFER_REACHED, function () {
+              console.log("El video no está en vivo");
+            });
+            //
+
+            //
+
+            const qualitySpan = document.querySelector(".wltv-qualityWd");
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+              var qualityLevels = hls.levels.map(function (level) {
+                return convertToReadableQuality(
+                  level.width,
+                  level.height,
+                  level.bitrate
+                );
+              });
+
+              if (qualityLevels) {
+                qualityLevels.forEach(function (qualityData, index) {
+                  var qualityButton = document.createElement("button");
+                  qualityButton.textContent = qualityData.quality;
+
+                  var speedSpan = document.createElement("span");
+                  speedSpan.classList.add("speed-wltv");
+                  speedSpan.textContent = qualityData.speed;
+
+                  qualityButton.appendChild(speedSpan);
+                  qualityButton.addEventListener("click", function () {
+                    // Remover la clase "selected" de todos los botones de calidad
+                    document
+                      .querySelectorAll("#quality-selector button")
+                      .forEach(function (button) {
+                        button.classList.remove("selected");
+                      });
+
+                    // Agregar la clase "selected" al botón clicado
+                    qualityButton.classList.add("selected");
+
+                    // Actualizar el span con la calidad seleccionada
+                    qualitySpan.textContent = qualityData.quality;
+
+                    if (index === -1) {
+                      hls.nextLevel = -1;
+                    } else {
+                      hls.nextLevel = index;
+                    }
+                  });
+                  qualitySelector.appendChild(qualityButton);
+                });
+
+                var autoButton = document.createElement("button");
+                autoButton.textContent = "Auto";
+                var currentQualityDisplay = document.createElement("div");
+                autoButton.appendChild(currentQualityDisplay);
+                autoButton.addEventListener("click", function () {
+                  // Remover la clase "selected" de todos los botones de calidad
+                  document
+                    .querySelectorAll("#quality-selector button")
+                    .forEach(function (button) {
+                      button.classList.remove("selected");
+                    });
+
+                  // Agregar la clase "selected" al botón "Auto"
+                  autoButton.classList.add("selected");
+
+                  // Actualizar el span con la calidad seleccionada
+                  qualitySpan.textContent = "Auto";
+
+                  hls.nextLevel = -1;
+                  var currentQuality = convertToReadableQuality(
+                    hls.levels[hls.currentLevel].width,
+                    hls.levels[hls.currentLevel].height,
+                    hls.levels[hls.currentLevel].bitrate
+                  );
+                  currentQualityDisplay.textContent = currentQuality;
+                });
+
+                // Agregar la clase "selected" al botón "Auto" por defecto
+                autoButton.classList.add("selected");
+                qualitySelector.appendChild(autoButton);
+
+                hls.on(Hls.Events.LEVEL_SWITCHED, function (event, data) {
+                  if (autoButton.classList.contains("selected")) {
+                    var currentQuality = convertToReadableQuality(
+                      hls.levels[data.level].width,
+                      hls.levels[data.level].height
+                    );
+                    autoButton.innerHTML =
+                      'Auto <span class="quality-wltv">(' +
+                      currentQuality.quality +
+                      ")</span>";
+                    currentQualityDisplay.textContent = currentQuality.quality;
+                    // Actualizar el span con la calidad seleccionada cuando se cambia automáticamente a "Auto"
+                    qualitySpan.textContent =
+                      "Auto (" + currentQuality.quality + ")";
+                  }
+                });
+              } else {
+                qualitySelector.textContent = "No hay calidades disponibles";
+              }
+            });
+
+            hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, function (event, data) {
+              var subtitleTracks = data.subtitleTracks;
+              if (subtitleTracks && subtitleTracks.length > 1) {
+                // Mostrar el botón si hay más de un subtítulo disponible
+                subtitleButton.style.display = "flex";
+                subtitleSelector.innerHTML = "";
+                var addedTracks = {};
+                console.log("Subtítulos disponibles:");
+
+                // Crear botón OFF (desactivado por defecto)
+                var noneButton = document.createElement("button");
+                noneButton.textContent = "OFF";
+                noneButton.addEventListener("click", function () {
+                  hls.subtitleTrack = -1;
+                  document
+                    .querySelectorAll("#subtitle-selector button")
+                    .forEach(function (button) {
+                      button.classList.remove("selected");
+                    });
+                  noneButton.classList.add("selected");
+                });
+                noneButton.classList.add("selected"); // Agregar la clase "selected" por defecto
+                subtitleSelector.appendChild(noneButton);
+
+                subtitleTracks.forEach(function (track, index) {
+                  if (!addedTracks[track.name]) {
+                    console.log(index + ": " + track.name);
+                    var subtitleButton = document.createElement("button");
+                    subtitleButton.textContent = track.name;
+                    subtitleButton.addEventListener("click", function () {
+                      hls.subtitleTrack = track.id;
+                      document
+                        .querySelectorAll("#subtitle-selector button")
+                        .forEach(function (button) {
+                          button.classList.remove("selected");
+                        });
+                      subtitleButton.classList.add("selected");
+                    });
+                    subtitleSelector.appendChild(subtitleButton);
+                    addedTracks[track.name] = true;
+                  }
+                });
+              } else {
+                // Ocultar el botón si no hay más de un subtítulo disponible
+                subtitleButton.style.display = "none";
+                subtitleSelector.textContent = "No hay subtítulos disponibles.";
+              }
+            });
+
+            // Verificar si el botón ya se encuentra oculto por falta de subtítulos
+            if (!hls.subtitleTracks || hls.subtitleTracks.length <= 1) {
+              subtitleButton.style.display = "none";
+            }
+
+            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, function (event, data) {
+              var audioTracks = data.audioTracks;
+              if (audioTracks && audioTracks.length > 1) {
+                // Mostrar el botón si hay más de un audio disponible
+                audioButton.style.display = "flex";
+                audioSelector.innerHTML = "";
+                var addedTracks = {};
+                console.log("Pistas de audio disponibles:");
+                audioTracks.forEach(function (track, index) {
+                  if (!addedTracks[track.name]) {
+                    console.log(index + ": " + track.name);
+                    var audioButton = document.createElement("button");
+                    audioButton.textContent = track.name;
+                    audioButton.addEventListener("click", function () {
+                      hls.audioTrack = track.id;
+                      document
+                        .querySelectorAll("#audio-selector button")
+                        .forEach(function (button) {
+                          button.classList.remove("selected");
+                        });
+                      audioButton.classList.add("selected");
+                    });
+                    audioSelector.appendChild(audioButton);
+                    addedTracks[track.name] = true;
+
+                    if (track.id === videoPlayer.audioTrack) {
+                      audioButton.classList.add("selected");
+                    }
+                  }
+                });
+              } else {
+                // Ocultar el botón si no hay más de un audio disponible
+                audioButton.style.display = "none";
+                audioSelector.textContent =
+                  "No hay pistas de audio disponibles.";
+              }
+            });
+
+            // Verificar si el botón ya se encuentra oculto por falta de pistas de audio
+            if (!hls.audioTracks || hls.audioTracks.length <= 1) {
+              audioButton.style.display = "none";
+            }
+
+            hls.on(Hls.Events.AUDIO_TRACK_SWITCHING, function (event, data) {
+              var currentTrack = hls.audioTracks[data.id];
+
+              var audioButtons = document.querySelectorAll(
+                "#audio-selector button"
+              );
+              audioButtons.forEach(function (button) {
+                if (button.textContent === currentTrack.name) {
+                  audioButtons.forEach(function (btn) {
+                    btn.classList.remove("selected");
+                  });
+                  button.classList.add("selected");
+                }
+              });
+            });
+          } else {
+            qualitySelector.textContent =
+              "El navegador no es compatible con la reproducción de HLS.";
+          }
+        }
+
+        WooliPlayerHlsMediaHTML();
+        const streamUrlInput = document.getElementById("stream-url-wltv");
+        const enterHlsLinkButton = document.getElementById("enter-hls-link");
+        const urlLinkF = document.getElementById("url-link-f");
+        const urlLinkS = document.getElementById("url-link-s");
+        const urlLinkT = document.getElementById("url-link-t");
+
+        urlLinkF.addEventListener("click", function () {
+          streamUrlInput.value = urlLinkF.textContent;
+        });
+
+        urlLinkS.addEventListener("click", function () {
+          streamUrlInput.value = urlLinkS.textContent;
+        });
+        urlLinkT.addEventListener("click", function () {
+          streamUrlInput.value = urlLinkT.textContent;
+        });
+
+        enterHlsLinkButton.addEventListener("click", function () {
+          const newSrc = streamUrlInput.value.trim();
+          if (newSrc !== "") {
+            if (!videoPlayer.paused) {
+              videoPlayer.pause();
+            }
+
+            videoPlayer.src = newSrc;
+
+            const qualitySelector = document.getElementById("quality-selector");
+            qualitySelector.innerHTML = "";
+
+            WooliPlayerHlsMediaHTML();
+          }
+        });
+      });
+
+      function convertToReadableQuality(width, height, bitrate) {
+        var quality = "";
+        var speed = "";
+
+        if (width >= 7680 && height >= 4320) {
+          quality = "8K";
+        } else if (width >= 3840 && height >= 2160) {
+          quality = "4K";
+        } else if (width >= 2560 && height >= 1440) {
+          quality = "2K";
+        } else if (width >= 1920 && height >= 1080) {
+          quality = "1080p";
+        } else if (width >= 1280 && height >= 720) {
+          quality = "720p";
+        } else if (width >= 854 && height >= 480) {
+          quality = "480p";
+        } else if (width >= 640 && height >= 360) {
+          quality = "360p";
+        } else if (width >= 426 && height >= 240) {
+          quality = "240p";
+        } else if (width >= 256 && height >= 144) {
+          quality = "144p";
+        } else {
+          quality = "HD";
+        }
+
+        if (bitrate) {
+          var kbps = bitrate / 1000;
+          if (kbps >= 1000) {
+            speed = Math.round(kbps / 1000) + " Mbps";
+          } else {
+            speed = Math.round(kbps) + " Kbps";
+          }
+        }
+
+        return { quality: quality, speed: speed };
+      }
+    </script>
+  </body>
+</html>
