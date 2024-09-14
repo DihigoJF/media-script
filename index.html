@@ -147,6 +147,8 @@
               displayTorrentInfo(torrent);
               displayFileList(torrent);
 
+              autoPlayFirstFile(torrent); // Reproducir automáticamente el primer archivo
+
               torrent.on("error", function (err) {
                 log("Error en el torrent: " + err.message, true);
               });
@@ -219,16 +221,16 @@
             return;
           }
 
-          if (file.name.match(/\.(mp4|webm|ogg)$/i)) {
+          if (file.name.match(/\.(mp4|webm|ogg|mkv|flv)$/i)) {
             videoPlayer.style.display = "block";
             audioPlayer.style.display = "none";
             videoPlayer.src = url;
-            videoPlayer.play();
+            videoPlayer.play(); // Reproducir automáticamente el video
           } else if (file.name.match(/\.(mp3|wav)$/i)) {
             audioPlayer.style.display = "block";
             videoPlayer.style.display = "none";
             audioPlayer.src = url;
-            audioPlayer.play();
+            audioPlayer.play(); // Reproducir automáticamente el audio
           } else {
             log(
               "Tipo de archivo no soportado para reproducción: " + file.name,
@@ -236,6 +238,19 @@
             );
           }
         });
+      }
+
+      // Función para reproducir automáticamente el primer archivo soportado
+      function autoPlayFirstFile(torrent) {
+        const firstPlayableFile = torrent.files.find((file) =>
+          file.name.match(/\.(mp4|webm|ogg|mkv|flv|mp3|wav)$/i)
+        );
+
+        if (firstPlayableFile) {
+          playFile(firstPlayableFile); // Reproducir automáticamente el primer archivo reproducible
+        } else {
+          log("No hay archivos reproducibles en el torrent", true);
+        }
       }
 
       // Función auxiliar para formatear bytes
