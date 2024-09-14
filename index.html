@@ -1,135 +1,180 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reproductor de Torrent Mejorado v3</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .container { background-color: #f0f0f0; padding: 20px; border-radius: 8px; }
-        #videoPlayer, #audioPlayer { width: 100%; max-width: 640px; margin-top: 20px; }
-        #fileList { margin-top: 20px; }
-        #fileList button { margin: 5px; }
-        #torrentInfo, #errorLog { margin-top: 20px; }
-        #errorLog { color: red; }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: #f0f0f0;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      #videoPlayer,
+      #audioPlayer {
+        width: 100%;
+        max-width: 640px;
+        margin-top: 20px;
+      }
+      #fileList {
+        margin-top: 20px;
+      }
+      #fileList button {
+        margin: 5px;
+      }
+      #torrentInfo,
+      #errorLog {
+        margin-top: 20px;
+      }
+      #errorLog {
+        color: red;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Reproductor de Torrent Mejorado v3</h1>
+      <h1>Reproductor de Torrent Mejorado v3</h1>
 
-        <!-- Formulario para subir archivo torrent -->
-        <form id="torrentForm">
-            <input type="file" name="torrentFile" id="torrentFile" accept=".torrent" required>
-            <button type="submit">Cargar Torrent</button>
-        </form>
+      <!-- Formulario para subir archivo torrent -->
+      <form id="torrentForm">
+        <input
+          type="file"
+          name="torrentFile"
+          id="torrentFile"
+          accept=".torrent"
+          required
+        />
+        <button type="submit">Cargar Torrent</button>
+      </form>
 
-        <!-- Sección para cargar enlaces magnet -->
-        <div id="magnet-section">
-            <input type="text" id="magnetLink" placeholder="Introduce el enlace magnet">
-            <button onclick="loadMagnet()">Cargar Magnet</button>
-        </div>
+      <!-- Sección para cargar enlaces magnet -->
+      <div id="magnet-section">
+        <input
+          type="text"
+          id="magnetLink"
+          placeholder="Introduce el enlace magnet"
+        />
+        <button onclick="loadMagnet()">Cargar Magnet</button>
+      </div>
 
-        <!-- Información del torrent -->
-        <div id="torrentInfo"></div>
+      <!-- Información del torrent -->
+      <div id="torrentInfo"></div>
 
-        <!-- Lista de archivos del torrent -->
-        <div id="fileList"></div>
+      <!-- Lista de archivos del torrent -->
+      <div id="fileList"></div>
 
-        <!-- Reproductores de media -->
-        <video id="videoPlayer" controls style="display:none;"></video>
-        <audio id="audioPlayer" controls style="display:none;"></audio>
+      <!-- Reproductores de media -->
+      <video id="videoPlayer" controls style="display: none"></video>
+      <audio id="audioPlayer" controls style="display: none"></audio>
 
-        <!-- Log de errores -->
-        <div id="errorLog"></div>
+      <!-- Log de errores -->
+      <div id="errorLog"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script>
-        const client = new WebTorrent();
-        let currentTorrent = null;
+      const client = new WebTorrent();
+      let currentTorrent = null;
 
-        // Función para loggear mensajes
-        function log(message, isError = false) {
-            console.log(message);
-            const logElement = document.getElementById('errorLog');
-            const p = document.createElement('p');
-            p.textContent = message;
-            if (isError) p.style.color = 'red';
-            logElement.appendChild(p);
+      // Función para loggear mensajes
+      function log(message, isError = false) {
+        console.log(message);
+        const logElement = document.getElementById("errorLog");
+        const p = document.createElement("p");
+        p.textContent = message;
+        if (isError) p.style.color = "red";
+        logElement.appendChild(p);
+      }
+
+      // Función para manejar la carga de archivos .torrent
+      document.getElementById("torrentForm").onsubmit = function (event) {
+        event.preventDefault();
+        const input = document.getElementById("torrentFile");
+        if (input.files.length === 0) {
+          log("Por favor selecciona un archivo .torrent", true);
+          return;
         }
+        const file = input.files[0];
+        const reader = new FileReader();
 
-        // Función para manejar la carga de archivos .torrent
-        document.getElementById('torrentForm').onsubmit = function(event) {
-            event.preventDefault();
-            const input = document.getElementById('torrentFile');
-            if (input.files.length === 0) {
-                log('Por favor selecciona un archivo .torrent', true);
-                return;
-            }
-            const file = input.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                try {
-                    const torrentBuffer = new Uint8Array(e.target.result);
-                    log('Archivo leído correctamente. Tamaño: ' + torrentBuffer.length + ' bytes');
-                    loadTorrent(torrentBuffer);
-                } catch (error) {
-                    log('Error al procesar el archivo: ' + error.message, true);
-                }
-            };
-
-            reader.onerror = function(e) {
-                log('Error al leer el archivo: ' + e.target.error, true);
-            };
-
-            reader.readAsArrayBuffer(file);
+        reader.onload = function (e) {
+          try {
+            const torrentBuffer = new Uint8Array(e.target.result);
+            log(
+              "Archivo leído correctamente. Tamaño: " +
+                torrentBuffer.length +
+                " bytes"
+            );
+            loadTorrent(torrentBuffer);
+          } catch (error) {
+            log("Error al procesar el archivo: " + error.message, true);
+          }
         };
 
-        // Función para cargar y reproducir un torrent
-        function loadTorrent(torrentId) {
-            if (currentTorrent) {
-                currentTorrent.destroy();
-            }
+        reader.onerror = function (e) {
+          log("Error al leer el archivo: " + e.target.error, true);
+        };
 
-            log('Intentando cargar torrent...');
-            client.add(torrentId, { announce: [
-                    'wss://tracker.openwebtorrent.com',
-                    'wss://tracker.btorrent.xyz',
-                    'wss://tracker.fastcast.nz'
-                ] }, function (torrent) {
-                currentTorrent = torrent;
-                log('Torrent añadido: ' + torrent.infoHash);
-                displayTorrentInfo(torrent);
-                displayFileList(torrent);
+        reader.readAsArrayBuffer(file);
+      };
 
-                torrent.on('error', function(err) {
-                    log('Error en el torrent: ' + err.message, true);
-                });
-
-                torrent.on('warning', function(err) {
-                    log('Advertencia en el torrent: ' + err.message);
-                });
-            }).on('error', function(err) {
-                log('Error al añadir torrent: ' + err.message, true);
-            });
+      // Función para cargar y reproducir un torrent
+      function loadTorrent(torrentId) {
+        if (currentTorrent) {
+          currentTorrent.destroy();
         }
 
-        // Función para cargar y reproducir un enlace magnet
-        function loadMagnet() {
-            const magnetLink = document.getElementById('magnetLink').value.trim();
-            if (magnetLink === '') {
-                log('Por favor introduce un enlace magnet', true);
-                return;
-            }
-            loadTorrent(magnetLink);
-        }
+        log("Intentando cargar torrent...");
+        client
+          .add(
+            torrentId,
+            {
+              announce: [
+                "wss://tracker.openwebtorrent.com",
+                "wss://tracker.btorrent.xyz",
+                "wss://tracker.fastcast.nz",
+              ],
+            },
+            function (torrent) {
+              currentTorrent = torrent;
+              log("Torrent añadido: " + torrent.infoHash);
+              displayTorrentInfo(torrent);
+              displayFileList(torrent);
 
-        // Función para mostrar información del torrent
-        function displayTorrentInfo(torrent) {
-            const infoDiv = document.getElementById('torrentInfo');
-            infoDiv.innerHTML = `
+              torrent.on("error", function (err) {
+                log("Error en el torrent: " + err.message, true);
+              });
+
+              torrent.on("warning", function (err) {
+                log("Advertencia en el torrent: " + err.message);
+              });
+            }
+          )
+          .on("error", function (err) {
+            log("Error al añadir torrent: " + err.message, true);
+          });
+      }
+
+      // Función para cargar y reproducir un enlace magnet
+      function loadMagnet() {
+        const magnetLink = document.getElementById("magnetLink").value.trim();
+        if (magnetLink === "") {
+          log("Por favor introduce un enlace magnet", true);
+          return;
+        }
+        loadTorrent(magnetLink);
+      }
+
+      // Función para mostrar información del torrent
+      function displayTorrentInfo(torrent) {
+        const infoDiv = document.getElementById("torrentInfo");
+        infoDiv.innerHTML = `
                 <h3>Información del Torrent</h3>
                 <p>Nombre: ${torrent.name}</p>
                 <p>InfoHash: ${torrent.infoHash}</p>
@@ -138,64 +183,72 @@
                 <p>Progreso: <span id="progress">0%</span></p>
             `;
 
-            // Actualizar información en tiempo real
-            const interval = setInterval(() => {
-                if (!torrent.client) {
-                    clearInterval(interval);
-                    return;
-                }
-                document.getElementById('downloadSpeed').textContent = formatBytes(torrent.downloadSpeed) + '/s';
-                document.getElementById('progress').textContent = (torrent.progress * 100).toFixed(2) + '%';
-            }, 1000);
-        }
+        // Actualizar información en tiempo real
+        const interval = setInterval(() => {
+          if (!torrent.client) {
+            clearInterval(interval);
+            return;
+          }
+          document.getElementById("downloadSpeed").textContent =
+            formatBytes(torrent.downloadSpeed) + "/s";
+          document.getElementById("progress").textContent =
+            (torrent.progress * 100).toFixed(2) + "%";
+        }, 1000);
+      }
 
-        // Función para mostrar la lista de archivos del torrent
-        function displayFileList(torrent) {
-            const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '<h3>Archivos en el Torrent</h3>';
-            torrent.files.forEach((file) => {
-                const button = document.createElement('button');
-                button.textContent = file.name + ' (' + formatBytes(file.length) + ')';
-                button.onclick = () => playFile(file);
-                fileList.appendChild(button);
-            });
-        }
+      // Función para mostrar la lista de archivos del torrent
+      function displayFileList(torrent) {
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = "<h3>Archivos en el Torrent</h3>";
+        torrent.files.forEach((file) => {
+          const button = document.createElement("button");
+          button.textContent =
+            file.name + " (" + formatBytes(file.length) + ")";
+          button.onclick = () => playFile(file);
+          fileList.appendChild(button);
+        });
+      }
 
-        // Función para reproducir un archivo
-        function playFile(file) {
-            file.getBlobURL((err, url) => {
-                if (err) {
-                    log('Error al obtener la URL del archivo: ' + err.message, true);
-                    return;
-                }
-                const videoPlayer = document.getElementById('videoPlayer');
-                const audioPlayer = document.getElementById('audioPlayer');
-                
-                if (file.name.match(/\.(mp4|webm|ogg|mkv|flv)$/i)) {
-                    videoPlayer.src = url;
-                    videoPlayer.style.display = 'block';
-                    audioPlayer.style.display = 'none';
-                    videoPlayer.play().catch(e => log('Error al reproducir el video: ' + e.message, true));
-                } else if (file.name.match(/\.(mp3|wav)$/i)) {
-                    audioPlayer.src = url;
-                    audioPlayer.style.display = 'block';
-                    videoPlayer.style.display = 'none';
-                    audioPlayer.play().catch(e => log('Error al reproducir el audio: ' + e.message, true));
-                } else {
-                    log('Tipo de archivo no soportado para reproducción: ' + file.name, true);
-                }
-            });
-        }
+      function playFile(file) {
+        const videoPlayer = document.getElementById("videoPlayer");
+        const audioPlayer = document.getElementById("audioPlayer");
 
-        // Función auxiliar para formatear bytes
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-        }
+        file.getBlobURL((err, url) => {
+          if (err) {
+            log("Error al obtener URL del archivo: " + err.message, true);
+            return;
+          }
+
+          if (file.name.match(/\.(mp4|webm|ogg)$/i)) {
+            videoPlayer.style.display = "block";
+            audioPlayer.style.display = "none";
+            videoPlayer.src = url;
+            videoPlayer.play();
+          } else if (file.name.match(/\.(mp3|wav)$/i)) {
+            audioPlayer.style.display = "block";
+            videoPlayer.style.display = "none";
+            audioPlayer.src = url;
+            audioPlayer.play();
+          } else {
+            log(
+              "Tipo de archivo no soportado para reproducción: " + file.name,
+              true
+            );
+          }
+        });
+      }
+
+      // Función auxiliar para formatear bytes
+      function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (
+          parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i]
+        );
+      }
     </script>
-</body>
+  </body>
 </html>
